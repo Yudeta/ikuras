@@ -3,9 +3,13 @@
 	import flash.display.MovieClip;
 	import flash.events.MouseEvent;
 	import flash.events.KeyboardEvent;
+	import flash.utils.getTimer;
+	import flash.events.Event;
 	
 	
 	public class PagePlay extends PageBase {
+		private var m_tetrisField:TetrisField;
+		private var m_fieldBitmap:FieldBitmap;
 		private var m_bg:Bg;
 		private var m_salmonNum:SalmonNum;
 		private var m_salmonJumps:Array;
@@ -25,6 +29,13 @@
 		{
 			GetMainClass().gotoAndStop("play");
 
+			m_tetrisField = new TetrisField();
+			m_tetrisField.InitSize(10, 20);
+			m_tetrisField.Start();
+			
+			m_fieldBitmap = new FieldBitmap();
+			m_fieldBitmap.Init(GetMainClass().blockFieldRoot, 160, 18);
+			
 			m_bg = new Bg();
 			m_bg.InitMc(GetMainClass().playBg);
 			m_bg.Start();
@@ -54,10 +65,12 @@
 			m_bg.SetStage(m_level + 1);
 			m_salmonNum.SetNum(m_score);
 			
+			StartGameLoop();
 			StartInput();
 		}
 		public override function End():void
 		{
+			EndGameLoop();
 			EndInput();
 			
 			m_gameover.End();
@@ -71,6 +84,42 @@
 			
 			m_bg.End();
 			m_bg = null;
+			
+			m_fieldBitmap.End();
+			m_fieldBitmap = null;
+			
+			m_tetrisField.End();
+			m_tetrisField = null;
+		}
+		
+
+		//----------------------------
+		// ゲームループ
+		//----------------------------
+		private var m_gameLoopTimer:GameTimer;
+		
+		private function StartGameLoop() : void{
+			m_gameLoopTimer = new GameTimer();
+			m_gameLoopTimer.Start();
+			
+			addEventListener(Event.ENTER_FRAME, OnEnterFrameGameLoop);
+		}
+		private function EndGameLoop() : void{
+			removeEventListener(Event.ENTER_FRAME, OnEnterFrameGameLoop);
+			
+			m_gameLoopTimer = null;
+		}
+		private function OnEnterFrameGameLoop(event:Event):void
+		{
+			if(100 <= m_gameLoopTimer.GetElapsedTime()){
+				m_gameLoopTimer.Start();
+				
+				var posX:int = UtilityFunc.xRandomInt(0, m_tetrisField.GetW() - 1);
+				var posY:int = UtilityFunc.xRandomInt(0, m_tetrisField.GetH() - 1);
+				m_tetrisField.SetBlock(posX, posY, 1);
+	
+				m_fieldBitmap.Update(m_tetrisField);
+			}
 		}
 		
 
@@ -111,7 +160,95 @@
 import flash.display.MovieClip;
 import flash.text.TextField;
 import flash.events.Event;
+import flash.display.Bitmap;
+import flash.display.BitmapData;
+import flash.geom.Point;
+import flash.geom.Rectangle;
 
+class FieldBitmap{
+	const ViewSizeW:int = 16 * 10;
+	const ViewSizeH:int = 16 * 20;
+	const BlockW:int = 16;
+	const BlockH:int = 16;
+	private var m_parentMC:MovieClip;
+	private var m_viewBitmapData:BitmapData;
+	private var m_viewBitmap:Bitmap;
+		
+	public function FieldBitmap(){
+	}
+	function Init(parentMC:MovieClip, posX:Number, posY:Number):void{
+		m_parentMC = parentMC;
+		
+		m_viewBitmapData = new BitmapData(ViewSizeW, ViewSizeH, false, 0x000000);  // 不透明赤色のBitmapDataを作る
+		m_viewBitmap = new Bitmap();
+		m_viewBitmap.bitmapData = m_viewBitmapData; // new Bitmap(bitmapData)としてもいい。
+		m_parentMC.addChild(m_viewBitmap);
+		m_viewBitmap.x = posX;
+		m_viewBitmap.y = posY;
+	}
+	function End():void{
+		m_parentMC.removeChild(m_viewBitmap);
+		m_viewBitmapData = null;
+		m_viewBitmap = null;
+	}
+	function Update(tetrisField:TetrisField):void{
+		var screenRect:Rectangle = new Rectangle(0, 0, ViewSizeW, ViewSizeH);
+		m_viewBitmapData.fillRect(screenRect, 0xf04040);
+		
+		var w:int = tetrisField.GetW();
+		var h:int = tetrisField.GetH();
+		for(var yi:int=0;yi<h;yi++){
+			for(var xi:int=0;xi<w;xi++){
+				if(tetrisField.GetBlock(xi,yi) == 1){
+					var ikuraBitmap:BitmapData = new IkuraBlock01(0, 0);
+					var point:Point = new Point(xi * BlockW, yi * BlockH);
+					var rect:Rectangle = new Rectangle(0, 0, BlockW, BlockH);
+					m_viewBitmapData.copyPixels(ikuraBitmap, rect, point);
+				}
+			}
+		}
+	}
+}
+
+class TetrisField{
+	private var m_fieldW:int;
+	private var m_fieldH:int;
+	private var m_field:Array;
+	
+	const StateNone:int = 0;
+	const StateBlock:int = 1;
+	
+	public function TetrisField(){
+	}
+	
+	//10x20
+	public function InitSize(fieldW:int, fieldH:int) : void{
+		m_fieldW = fieldW;
+		m_fieldH = fieldH;
+		m_field = new Array(m_fieldW * m_fieldH);
+		for(var i:int=0;i<m_field.length;i++){
+			m_field[i] = StateNone;
+		}
+	}
+	public function SetBlock(posX:int, posY:int, blockState:int) : void{
+		m_field[posX * posY * m_fieldW] = blockState;
+	}
+	public function GetBlock(posX:int, posY:int) : int{
+		return m_field[posX * posY * m_fieldW];
+	}
+	public function GetW() : int{
+		return m_fieldW;
+	}
+	public function GetH() : int{
+		return m_fieldH;
+	}
+	
+	public function Start() : void{
+	}
+	public function End() : void{
+		m_field = null;
+	}
+}
 
 class Bg{
 	private var m_mc:MovieClip;
