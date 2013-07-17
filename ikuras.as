@@ -20,9 +20,9 @@
 		}
 		//------------------------------------------------------
 		public function InitApp() : void{
-			if(Define.Release == false){
+/*			if(Define.Release == false){
 				addChild(new FPSCounter(0,0,0xff0000));
-			}
+			}*/
 			StartEnterFrame();
 			
 			SetNextPage(new PageTitle());
