@@ -273,15 +273,16 @@
 			var pieceY0:int = blockPiece.GetPositionY();
 			var pieceX1:int = blockPiece.GetPositionX() + blockPiece.GetW() - 1;
 			var pieceY1:int = blockPiece.GetPositionY() + blockPiece.GetH() - 1;
-			pieceX0 = Math.max(0, pieceX0);
-			pieceY0 = Math.max(0, pieceY0);
-			pieceX1 = Math.min(fieldW - 1, pieceX1);
-			pieceY1 = Math.min(fieldH - 1, pieceY1);
 			
 			for(var yi:int=0;yi<=pieceY1-pieceY0;yi++){
 				var ypos:int = pieceY0 + yi;
 				for(var xi:int=0;xi<=pieceX1-pieceX0;xi++){
 					var xpos:int = pieceX0 + xi;
+					
+					if(ypos < 0 || fieldH <= ypos || xpos < 0 || fieldW <= xpos){
+						continue;
+					}
+					
 					if(blockPiece.GetBlock(xi,yi) == 1){
 						tetrisField.SetBlock(xpos, ypos, TetrisField.StateBlock);
 					}
