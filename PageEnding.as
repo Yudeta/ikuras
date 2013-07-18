@@ -49,11 +49,15 @@
 			m_gameTimer = new GameTimer();
 			m_gameTimer.Start();
 			
+			GetMainClass().GetSoundChannel().PlaySound(ikuras.SoundChannelBgm, new SoundResult(), true);
+			
 			GetStage().addEventListener(MouseEvent.CLICK, OnClickTitleStartButton);
 			GetStage().addEventListener(KeyboardEvent.KEY_DOWN, OnKeyDown);
 		}
 		public override function End():void
 		{
+			GetMainClass().GetSoundChannel().StopSound(ikuras.SoundChannelBgm);
+			
 			m_gameTimer = null;
 			
 			GetStage().removeEventListener(MouseEvent.CLICK, OnClickTitleStartButton);

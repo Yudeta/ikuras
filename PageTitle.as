@@ -29,9 +29,13 @@
 		
 		//----------------------------
 		private function OnClickTitleStartButton(e:MouseEvent):void{
-			SetNextPage(new PagePlay());
+			NextPage();
 		}
 		private function OnKeyDown(event:KeyboardEvent):void{
+			NextPage();
+		}
+		private function NextPage():void{
+			GetMainClass().GetSoundChannel().PlaySound(ikuras.SoundChannelSe, new SoundStart());
 			SetNextPage(new PagePlay());
 		}
 	}

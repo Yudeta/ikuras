@@ -23,6 +23,8 @@
 /*			if(Define.Release == false){
 				addChild(new FPSCounter(0,0,0xff0000));
 			}*/
+			InitSoundChannel();
+			
 			StartEnterFrame();
 			
 			SetNextPage(new PageTitle());
@@ -42,6 +44,21 @@
 		{
 			UpdatePage();
 		}
+		
+		//------------------------------------------------------
+		static const SoundChannelBgm:int = 0;
+		static const SoundChannelSe:int = 1;
+		static const SoundChannelNum:int = 2;
+		private var m_soundChannel:ZacoSoundChannel = null;
+		
+		private function InitSoundChannel() : void{
+			m_soundChannel = new ZacoSoundChannel();
+			m_soundChannel.InitChannelNum(SoundChannelNum);
+		}
+		public function GetSoundChannel() : ZacoSoundChannel{
+			return m_soundChannel;
+		}
+		//GetSunSoundChannel().PlaySound(SoundChannelGUI, SoundFilepathTabClick);
 		
 		//------------------------------------------------------
 		private var m_currentPage:PageBase = null;

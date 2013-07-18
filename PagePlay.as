@@ -107,9 +107,12 @@
 			StartInput();
 			
 			GenerateNewPiece();
+			
+			GetMainClass().GetSoundChannel().PlaySound(ikuras.SoundChannelBgm, new SoundBgm(), true);
 		}
 		public override function End():void
 		{
+			GetMainClass().GetSoundChannel().StopSound(ikuras.SoundChannelBgm);
 			EndGameover();
 			
 			EndPieceMove();
@@ -215,8 +218,9 @@
 			m_gameoverTimer = new GameTimer();
 			m_gameoverTimer.Start();
 			
-			addEventListener(Event.ENTER_FRAME, OnEnterFrameGameover);
+			GetMainClass().GetSoundChannel().PlaySound(ikuras.SoundChannelSe, new SoundGameover());
 			
+			addEventListener(Event.ENTER_FRAME, OnEnterFrameGameover);
 		}
 		private function EndGameover():void
 		{
@@ -362,6 +366,7 @@
 						m_blockPiece.RotateRight();
 					}
 				}
+				GetMainClass().GetSoundChannel().PlaySound(ikuras.SoundChannelSe, new SoundRot());
 			}
 		}
 		
@@ -414,6 +419,7 @@
 			for(var i:int=0;i<m_lineBreakCount;i++){
 				m_salmonJumps[i].Play();
 			}
+			GetMainClass().GetSoundChannel().PlaySound(ikuras.SoundChannelSe, new SoundJump());
 			
 			UpdateLineBreakBlink();
 			
@@ -426,6 +432,7 @@
 			if(m_salmonJumps[0].IsPlay() == false){
 				m_lineBreakEffect[m_lineBreakCount - 1].Play();
 				m_lineBreakFunction = UpdateLineBreakEffect2;
+				GetMainClass().GetSoundChannel().PlaySound(ikuras.SoundChannelSe, new SoundShake());
 			}
 		}
 		private function UpdateLineBreakEffect2():void
