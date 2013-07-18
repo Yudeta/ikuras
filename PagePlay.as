@@ -66,6 +66,8 @@
 			m_levelNum.InitMc(GetMainClass().levelDisp);
 			m_levelNum.Start();
 			
+			InitLineBreakEffect();
+			
 			var i:int;
 			
 			m_salmonJumps = new Array();
@@ -160,11 +162,14 @@
 		//----------------------------
 		// ゲームループ
 		//----------------------------
+		private var m_isPauseGameLoop:Boolean;
 		private var m_gameLoopTimer:GameTimer;
 		
 		private function StartGameLoop() : void{
 			m_gameLoopTimer = new GameTimer();
 			m_gameLoopTimer.Start();
+			
+			m_isPauseGameLoop = false;
 			
 			addEventListener(Event.ENTER_FRAME, OnEnterFrameGameLoop);
 		}
@@ -176,10 +181,20 @@
 		private function OnEnterFrameGameLoop(event:Event):void
 		{
 			UpdatePieceMove(m_blockPiece);
+			UpdateLineBreakEffect();
 			
 			m_fieldBitmap.Clear();
 			m_fieldBitmap.Update(m_tetrisField);
 			m_fieldBitmap.UpdatePiece(m_blockPiece);
+		}
+		private function PauseGameLoop(b:Boolean):void
+		{
+			// ゲーム処理は停止し、描画だけは行う
+			m_isPauseGameLoop = b;
+		}
+		private function IsPauseGameLoop():Boolean
+		{
+			return m_isPauseGameLoop;
 		}
 		
 		//----------------------------
@@ -257,77 +272,146 @@
 			m_pieceMoveTimer = null;
 		}
 		private function UpdatePieceMove(blockPiece:BlockPiece):void{
-			// 時間で落下
-			var downTime:int;
-			
-			if(IsDownKeyDown()){
-				downTime = PieceMoveFastDownTime;
-			}else{
-				if(m_level <= 5){
-					downTime = PieceMoveAutoDownTime_0;
-				}else if(m_level < 10){
-					downTime = PieceMoveAutoDownTime_1;
+			if(IsPauseGameLoop() == false){
+				// 時間で落下
+				var downTime:int;
+				
+				if(IsDownKeyDown()){
+					downTime = PieceMoveFastDownTime;
 				}else{
-					downTime = PieceMoveAutoDownTime_2;
+					if(m_level <= 5){
+						downTime = PieceMoveAutoDownTime_0;
+					}else if(m_level < 10){
+						downTime = PieceMoveAutoDownTime_1;
+					}else{
+						downTime = PieceMoveAutoDownTime_2;
+					}
+				}
+				if(downTime <= m_pieceMoveTimer.GetElapsedTime()){
+					m_pieceMoveTimer.Start();
+					
+					var oldPosX:int = blockPiece.GetPositionX();
+					var oldPosY:int = blockPiece.GetPositionY();
+					blockPiece.SetPosition(oldPosX, oldPosY + 1);
+					if(CheckHit(m_tetrisField, m_blockPiece)){
+						// 真下にブロックがあったら戻して定着
+						blockPiece.SetPosition(oldPosX, oldPosY);
+						FixPieceOnField(m_tetrisField, m_blockPiece);
+						
+						var breakCount:int = BreakLine(m_tetrisField);
+						if(0 < breakCount){
+							StartLineBreakEffect(breakCount);
+						/*	m_score += breakCount;
+							m_salmonNum.SetNum(m_score);
+							
+							m_level = Math.min(10, Math.floor(m_score/3) + 1);
+							m_bg.SetStage(m_level);
+							m_levelNum.SetNum(m_level);
+							
+							for(var i:int=0;i<breakCount;i++){
+								m_salmonJumps[i].Play();
+							}
+							m_lineBreakEffect[breakCount - 1].Play();*/
+						}else{
+							NewPiece();
+						}
+					}
 				}
 			}
-			if(downTime <= m_pieceMoveTimer.GetElapsedTime()){
-				m_pieceMoveTimer.Start();
-				
-				var oldPosX:int = blockPiece.GetPositionX();
-				var oldPosY:int = blockPiece.GetPositionY();
-				blockPiece.SetPosition(oldPosX, oldPosY + 1);
-				if(CheckHit(m_tetrisField, m_blockPiece)){
-					// 真下にブロックがあったら戻して定着
-					blockPiece.SetPosition(oldPosX, oldPosY);
-					FixPieceOnField(m_tetrisField, m_blockPiece);
-					
-					var breakCount:int = BreakLine(m_tetrisField);
-					if(0 < breakCount){
-						m_score += breakCount;
-						m_salmonNum.SetNum(m_score);
-						
-						m_level = Math.min(10, Math.floor(m_score/3) + 1);
-						m_bg.SetStage(m_level);
-						m_levelNum.SetNum(m_level);
-						
-						for(var i:int=0;i<breakCount;i++){
-							m_salmonJumps[i].Play();
-						}
-						m_lineBreakEffect[breakCount - 1].Play();
-					}
-					
-					// 次のピース生成
-					GenerateNewPiece();
-					
-					//生成していきなりヒットしていたらゲームオーバー
-					if(CheckHit(m_tetrisField, m_blockPiece)){
-						StartGameover();
-					}
-				}
+		}
+		private function NewPiece():void
+		{
+			// 次のピース生成
+			GenerateNewPiece();
+			
+			//生成していきなりヒットしていたらゲームオーバー
+			if(CheckHit(m_tetrisField, m_blockPiece)){
+				StartGameover();
 			}
 		}
 		private function MovePiece(addX:int, addY:int, blockPiece:BlockPiece):void
 		{
-			var oldPosX:int = blockPiece.GetPositionX();
-			var oldPosY:int = blockPiece.GetPositionY();
-			blockPiece.SetPosition(oldPosX + addX, oldPosY + addY);
-			if(CheckHit(m_tetrisField, m_blockPiece)){
-				blockPiece.SetPosition(oldPosX, oldPosY);
+			if(IsPauseGameLoop() == false){
+				var oldPosX:int = blockPiece.GetPositionX();
+				var oldPosY:int = blockPiece.GetPositionY();
+				blockPiece.SetPosition(oldPosX + addX, oldPosY + addY);
+				if(CheckHit(m_tetrisField, m_blockPiece)){
+					blockPiece.SetPosition(oldPosX, oldPosY);
+				}
 			}
 		}
 		private function RotatePiece(rotRight:Boolean = true):void
 		{
-			if(rotRight){
-				m_blockPiece.RotateRight();
-				if(CheckHit(m_tetrisField, m_blockPiece)){
-					m_blockPiece.RotateLeft();
-				}
-			}else{
-				m_blockPiece.RotateLeft();
-				if(CheckHit(m_tetrisField, m_blockPiece)){
+			if(IsPauseGameLoop() == false){
+				if(rotRight){
 					m_blockPiece.RotateRight();
+					if(CheckHit(m_tetrisField, m_blockPiece)){
+						m_blockPiece.RotateLeft();
+					}
+				}else{
+					m_blockPiece.RotateLeft();
+					if(CheckHit(m_tetrisField, m_blockPiece)){
+						m_blockPiece.RotateRight();
+					}
 				}
+			}
+		}
+		
+		//----------------------------
+		// ライン消し演出
+		//----------------------------
+		private var m_lineBreakFunction:Function;
+		private var m_lineBreakCount:int;
+		
+		private function InitLineBreakEffect():void
+		{
+			m_lineBreakFunction = null;
+		}
+		private function StartLineBreakEffect(lineBreakCount:int):void
+		{
+			m_lineBreakFunction = UpdateLineBreakEffect0;
+			m_lineBreakCount = lineBreakCount;
+			PauseGameLoop(true);
+		}
+		private function EndLineBreakEffect():void
+		{
+			m_score += m_lineBreakCount;
+			m_salmonNum.SetNum(m_score);
+			
+			m_level = Math.min(10, Math.floor(m_score/3) + 1);
+			m_bg.SetStage(m_level);
+			m_levelNum.SetNum(m_level);
+			
+			m_lineBreakFunction = null;
+			
+			PauseGameLoop(false);
+			NewPiece();
+		}
+		private function UpdateLineBreakEffect():void
+		{
+			if(m_lineBreakFunction != null){
+				m_lineBreakFunction();
+			}
+		}
+		private function UpdateLineBreakEffect0():void
+		{
+			for(var i:int=0;i<m_lineBreakCount;i++){
+				m_salmonJumps[i].Play();
+			}
+			
+			m_lineBreakFunction = UpdateLineBreakEffect1;
+		}
+		private function UpdateLineBreakEffect1():void
+		{
+			if(m_salmonJumps[0].IsPlay() == false){
+				m_lineBreakEffect[m_lineBreakCount - 1].Play();
+				m_lineBreakFunction = UpdateLineBreakEffect2;
+			}
+		}
+		private function UpdateLineBreakEffect2():void
+		{
+			if(m_lineBreakEffect[m_lineBreakCount - 1].IsPlay() == false){
+				EndLineBreakEffect();
 			}
 		}
 		
@@ -598,7 +682,7 @@ class NextPieceBitmap{
 	function Init(parentMC:MovieClip, posX:Number, posY:Number):void{
 		m_parentMC = parentMC;
 		
-		m_viewBitmapData = new BitmapData(ViewSizeW, ViewSizeH, true, 0x000000);  // 不透明赤色のBitmapDataを作る
+		m_viewBitmapData = new BitmapData(ViewSizeW, ViewSizeH, true, 0x00000000);  // 不透明赤色のBitmapDataを作る
 		m_viewBitmap = new Bitmap();
 		m_viewBitmap.bitmapData = m_viewBitmapData; // new Bitmap(bitmapData)としてもいい。
 		m_parentMC.addChild(m_viewBitmap);
@@ -724,6 +808,10 @@ class SalmonJump{
 		}
 	}
 	
+	public function IsPlay() : Boolean{
+		return m_mc.visible;
+	}
+	
 	public function Play() : void{
 		m_mc.addEventListener("onMovieComp", onComp);
 		m_mc.gotoAndPlay(1);
@@ -759,6 +847,10 @@ class LineBreakEffect{
 			Stop();
 			m_mc = null;
 		}
+	}
+	
+	public function IsPlay() : Boolean{
+		return m_mc.visible;
 	}
 	
 	public function Play() : void{
