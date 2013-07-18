@@ -262,8 +262,10 @@
 		//----------------------------
 		static const PieceMoveFastDownTime:int = 40; // 早く落とす入力時の落ちる時間[ms]
 		static const PieceMoveAutoDownTime_0:int = 500; // 自動でピースが一段落ちる時間[ms]
-		static const PieceMoveAutoDownTime_1:int = 300; // 自動でピースが一段落ちる時間[ms]
-		static const PieceMoveAutoDownTime_2:int = 100; // 自動でピースが一段落ちる時間[ms]
+		static const PieceMoveAutoDownTime_1:int = 400; // 自動でピースが一段落ちる時間[ms]
+		static const PieceMoveAutoDownTime_2:int = 300; // 自動でピースが一段落ちる時間[ms]
+		static const PieceMoveAutoDownTime_3:int = 200; // 自動でピースが一段落ちる時間[ms]
+		static const PieceMoveAutoDownTime_4:int = 100; // 自動でピースが一段落ちる時間[ms]
 		private var m_pieceMoveTimer:GameTimer;
 		
 		private function StartPieceMove():void{
@@ -281,12 +283,16 @@
 				if(IsDownKeyDown()){
 					downTime = PieceMoveFastDownTime;
 				}else{
-					if(m_level <= 5){
+					if(m_level <= 2){
 						downTime = PieceMoveAutoDownTime_0;
-					}else if(m_level < 10){
+					}else if(m_level <= 5){
 						downTime = PieceMoveAutoDownTime_1;
-					}else{
+					}else if(m_level <= 7){
 						downTime = PieceMoveAutoDownTime_2;
+					}else if(m_level < 10){
+						downTime = PieceMoveAutoDownTime_3;
+					}else{
+						downTime = PieceMoveAutoDownTime_4;
 					}
 				}
 				if(downTime <= m_pieceMoveTimer.GetElapsedTime()){
