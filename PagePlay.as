@@ -11,6 +11,7 @@
 		private var m_tetrisField:TetrisField;
 		private var m_fieldBitmap:FieldBitmap;
 		private var m_bg:Bg;
+		private var m_blockPiece:BlockPiece;
 		private var m_salmonNum:SalmonNum;
 		private var m_salmonJumps:Array;
 		private var m_gameover:Gameover;
@@ -40,6 +41,11 @@
 			m_bg.InitMc(GetMainClass().playBg);
 			m_bg.Start();
 			
+			m_blockPiece = new BlockPiece();
+			m_blockPiece.SetPieceType(BlockPiece.PieceType_I);
+			m_blockPiece.SetRotType(BlockPiece.RotType_0);
+			m_blockPiece.SetPosition(0, 0);
+			
 			m_salmonNum = new SalmonNum();
 			m_salmonNum.InitMc(GetMainClass().salmonNumDisp);
 			m_salmonNum.Start();
@@ -65,11 +71,15 @@
 			m_bg.SetStage(m_level + 1);
 			m_salmonNum.SetNum(m_score);
 			
+			StartPieceMove();
 			StartGameLoop();
 			StartInput();
+			
+			GenerateNewPiece();
 		}
 		public override function End():void
 		{
+			EndPieceMove();
 			EndGameLoop();
 			EndInput();
 			
@@ -87,6 +97,9 @@
 			
 			m_fieldBitmap.End();
 			m_fieldBitmap = null;
+			
+			m_blockPiece.End();
+			m_blockPiece = null;
 			
 			m_tetrisField.End();
 			m_tetrisField = null;
@@ -111,46 +124,220 @@
 		}
 		private function OnEnterFrameGameLoop(event:Event):void
 		{
-			if(100 <= m_gameLoopTimer.GetElapsedTime()){
-				m_gameLoopTimer.Start();
+			UpdatePieceMove(m_blockPiece);
+			
+			m_fieldBitmap.Clear();
+			m_fieldBitmap.Update(m_tetrisField);
+			m_fieldBitmap.UpdatePiece(m_blockPiece);
+		}
+		
+		//----------------------------
+		// ピース生成
+		//----------------------------
+		private function GenerateNewPiece():void
+		{
+			var blockType:int = m_nextBlockType;
+
+			m_blockPiece.SetPieceType(blockType);
+			m_blockPiece.SetRotType(BlockPiece.RotType_0);
+			m_blockPiece.SetPosition(2, 2);
+
+			m_nextBlockType = UtilityFunc.xRandomInt(0, BlockType.Num - 1);
+		}
+
+		//----------------------------
+		// ピース移動
+		//----------------------------
+		static const PieceMoveAutoDownTime:int = 100; // 自動でピースが一段落ちる時間[ms]
+		private var m_pieceMoveTimer:GameTimer;
+		
+		private function StartPieceMove():void{
+			m_pieceMoveTimer = new GameTimer();
+			m_pieceMoveTimer.Start();
+		}
+		private function EndPieceMove():void{
+			m_pieceMoveTimer = null;
+		}
+		private function UpdatePieceMove(blockPiece:BlockPiece):void{
+			// 時間で落下
+			if(PieceMoveAutoDownTime <= m_pieceMoveTimer.GetElapsedTime()){
+				m_pieceMoveTimer.Start();
 				
-				var posX:int = UtilityFunc.xRandomInt(0, m_tetrisField.GetW() - 1);
-				var posY:int = UtilityFunc.xRandomInt(0, m_tetrisField.GetH() - 1);
-				m_tetrisField.SetBlock(posX, posY, 1);
-	
-				m_fieldBitmap.Update(m_tetrisField);
+				var oldPosX:int = blockPiece.GetPositionX();
+				var oldPosY:int = blockPiece.GetPositionY();
+				blockPiece.SetPosition(oldPosX, oldPosY + 1);
+				if(CheckHit(m_tetrisField, m_blockPiece)){
+					// 真下にブロックがあったら戻して定着
+					blockPiece.SetPosition(oldPosX, oldPosY);
+					FixPieceOnField(m_tetrisField, m_blockPiece);
+					
+					//trace("fix" + oldPosX + "," + oldPosY);
+					// ★列が揃った判定
+					//DumpField(m_tetrisField);
+					
+					// 次のピース生成
+					GenerateNewPiece();
+				}
+			}
+		}
+		private function MovePiece(addX:int, addY:int, blockPiece:BlockPiece):void
+		{
+			var oldPosX:int = blockPiece.GetPositionX();
+			var oldPosY:int = blockPiece.GetPositionY();
+			blockPiece.SetPosition(oldPosX + addX, oldPosY + addY);
+			if(CheckHit(m_tetrisField, m_blockPiece)){
+				blockPiece.SetPosition(oldPosX, oldPosY);
+			}
+		}
+		private function RotatePiece(rotRight:Boolean = true):void
+		{
+			if(rotRight){
+				m_blockPiece.RotateRight();
+				if(CheckHit(m_tetrisField, m_blockPiece)){
+					m_blockPiece.RotateLeft();
+				}
+			}else{
+				m_blockPiece.RotateLeft();
+				if(CheckHit(m_tetrisField, m_blockPiece)){
+					m_blockPiece.RotateRight();
+				}
 			}
 		}
 		
-
+		//----------------------------
+		// ピースをフィールドに定着
+		//----------------------------
+		private function FixPieceOnField(tetrisField:TetrisField, blockPiece:BlockPiece):void
+		{
+			var fieldW:int = tetrisField.GetW();
+			var fieldH:int = tetrisField.GetH();
+			
+			var pieceX0:int = blockPiece.GetPositionX();
+			var pieceY0:int = blockPiece.GetPositionY();
+			var pieceX1:int = blockPiece.GetPositionX() + blockPiece.GetW() - 1;
+			var pieceY1:int = blockPiece.GetPositionY() + blockPiece.GetH() - 1;
+			pieceX0 = Math.max(0, pieceX0);
+			pieceY0 = Math.max(0, pieceY0);
+			pieceX1 = Math.min(fieldW - 1, pieceX1);
+			pieceY1 = Math.min(fieldH - 1, pieceY1);
+			
+			for(var yi:int=0;yi<=pieceY1-pieceY0;yi++){
+				var ypos:int = pieceY0 + yi;
+				for(var xi:int=0;xi<=pieceX1-pieceX0;xi++){
+					var xpos:int = pieceX0 + xi;
+					if(blockPiece.GetBlock(xi,yi) == 1){
+						tetrisField.SetBlock(xpos, ypos, TetrisField.StateBlock);
+					}
+				}
+			}
+		}
+/*		private function DumpField(tetrisField:TetrisField):void
+		{
+			var fieldW:int = tetrisField.GetW();
+			var fieldH:int = tetrisField.GetH();
+			trace("-----------------");
+			for(var yi:int=0;yi<fieldH;yi++){
+				var rows:String = "";
+				for(var xi:int=0;xi<fieldW;xi++){
+					rows += tetrisField.GetBlock(xi,yi);
+				}
+				trace(rows);
+			}
+		}*/
+		//----------------------------
+		// ピースとブロックのヒット
+		//----------------------------
+		// @return	true:hit
+		private function CheckHit(tetrisField:TetrisField, blockPiece:BlockPiece):Boolean
+		{
+			var fieldW:int = tetrisField.GetW();
+			var fieldH:int = tetrisField.GetH();
+			
+			var pieceX0:int = blockPiece.GetPositionX();
+			var pieceY0:int = blockPiece.GetPositionY();
+			var pieceX1:int = blockPiece.GetPositionX() + blockPiece.GetW() - 1;
+			var pieceY1:int = blockPiece.GetPositionY() + blockPiece.GetH() - 1;
+			
+			for(var yi:int=0;yi<=pieceY1-pieceY0;yi++){
+				var ypos:int = pieceY0 + yi;
+				for(var xi:int=0;xi<=pieceX1-pieceX0;xi++){
+					var xpos:int = pieceX0 + xi;
+					if(blockPiece.GetBlock(xi, yi) == 1){
+						if(ypos < 0 || fieldH <= ypos || xpos < 0 || fieldW <= xpos){
+							return true;
+						}
+						if(tetrisField.GetBlock(xpos, ypos) == 1){
+							return true;
+						}
+					}
+				}
+			}
+			return false;
+		}
 		
 		//----------------------------
-		// マウス入力
+		// 入力
 		//----------------------------
+		private var m_isDownKeyDown:Boolean;
+		private var m_isDownKeyUp:Boolean;
+		private var m_isDownKeyLeft:Boolean;
+		private var m_isDownKeyRight:Boolean;
+		
 		private function StartInput():void
 		{
-			GetStage().addEventListener(MouseEvent.CLICK, OnClick);
+			m_isDownKeyDown = false;
+			m_isDownKeyUp = false;
+			m_isDownKeyLeft = false;
+			m_isDownKeyUp = false;
+//			GetStage().addEventListener(MouseEvent.CLICK, OnClick);
 			GetStage().addEventListener(KeyboardEvent.KEY_DOWN, OnKeyDown);
 			GetStage().addEventListener(KeyboardEvent.KEY_UP, OnKeyUp);
 		}
 		private function EndInput():void
 		{
-			GetStage().removeEventListener(MouseEvent.CLICK, OnClick);
+//			GetStage().removeEventListener(MouseEvent.CLICK, OnClick);
 			GetStage().removeEventListener(KeyboardEvent.KEY_DOWN, OnKeyDown);
 			GetStage().removeEventListener(KeyboardEvent.KEY_UP, OnKeyUp);
 		}
-		private function OnClick(e:MouseEvent):void{
+/*		private function OnClick(e:MouseEvent):void{
 			SetNextPage(new PageEnding());
-		}
+		}*/
 		
 		private function OnKeyDown(event:KeyboardEvent){
 			if(event.keyCode == KeyCode.Left){
-				UtilityFunc.Trace("down a");
+				if(m_isDownKeyLeft == false){
+					m_isDownKeyLeft = true;
+					MovePiece(-1, 0, m_blockPiece);
+				}
+			}
+			if(event.keyCode == KeyCode.Right){
+				if(m_isDownKeyRight == false){
+					m_isDownKeyRight = true;
+					MovePiece(1, 0, m_blockPiece);
+				}
+			}
+			if(event.keyCode == KeyCode.Up){
+				if(m_isDownKeyUp == false){
+					m_isDownKeyUp = true;
+					RotatePiece();
+				}
+			}
+			if(event.keyCode == KeyCode.Down){
+				if(m_isDownKeyDown == false){
+					m_isDownKeyDown = true;
+					MovePiece(0, 1, m_blockPiece);
+				}
 			}
 		}
 		private function OnKeyUp(event:KeyboardEvent){
-			if(event.keyCode == KeyCode.Left){
-				UtilityFunc.Trace("up a");
+			if(event.keyCode == KeyCode.Down){
+				m_isDownKeyDown = false;
+			}else if(event.keyCode == KeyCode.Up){
+				m_isDownKeyUp = false;
+			}else if(event.keyCode == KeyCode.Left){
+				m_isDownKeyLeft = false;
+			}else if(event.keyCode == KeyCode.Right){
+				m_isDownKeyRight = false;
 			}
 		}
 	}
@@ -191,10 +378,11 @@ class FieldBitmap{
 		m_viewBitmapData = null;
 		m_viewBitmap = null;
 	}
-	function Update(tetrisField:TetrisField):void{
+	function Clear():void{
 		var screenRect:Rectangle = new Rectangle(0, 0, ViewSizeW, ViewSizeH);
-		m_viewBitmapData.fillRect(screenRect, 0xf04040);
-		
+		m_viewBitmapData.fillRect(screenRect, 0x000000);
+	}
+	function Update(tetrisField:TetrisField):void{
 		var w:int = tetrisField.GetW();
 		var h:int = tetrisField.GetH();
 		for(var yi:int=0;yi<h;yi++){
@@ -208,47 +396,26 @@ class FieldBitmap{
 			}
 		}
 	}
-}
-
-class TetrisField{
-	private var m_fieldW:int;
-	private var m_fieldH:int;
-	private var m_field:Array;
-	
-	const StateNone:int = 0;
-	const StateBlock:int = 1;
-	
-	public function TetrisField(){
-	}
-	
-	//10x20
-	public function InitSize(fieldW:int, fieldH:int) : void{
-		m_fieldW = fieldW;
-		m_fieldH = fieldH;
-		m_field = new Array(m_fieldW * m_fieldH);
-		for(var i:int=0;i<m_field.length;i++){
-			m_field[i] = StateNone;
+	function UpdatePiece(blockPiece:BlockPiece):void{
+		var xo = blockPiece.GetPositionX();
+		var yo = blockPiece.GetPositionY();
+		
+		var w:int = blockPiece.GetW();
+		var h:int = blockPiece.GetH();
+		
+		for(var yi:int=0;yi<h;yi++){
+			for(var xi:int=0;xi<w;xi++){
+				if(blockPiece.GetBlock(xi, yi) == 1){
+					var ikuraBitmap:BitmapData = new IkuraBlock01(0, 0);
+					var point:Point = new Point((xo+xi) * BlockW, (yo+yi) * BlockH);
+					var rect:Rectangle = new Rectangle(0, 0, BlockW, BlockH);
+					m_viewBitmapData.copyPixels(ikuraBitmap, rect, point);
+				}
+			}
 		}
 	}
-	public function SetBlock(posX:int, posY:int, blockState:int) : void{
-		m_field[posX * posY * m_fieldW] = blockState;
-	}
-	public function GetBlock(posX:int, posY:int) : int{
-		return m_field[posX * posY * m_fieldW];
-	}
-	public function GetW() : int{
-		return m_fieldW;
-	}
-	public function GetH() : int{
-		return m_fieldH;
-	}
-	
-	public function Start() : void{
-	}
-	public function End() : void{
-		m_field = null;
-	}
 }
+
 
 class Bg{
 	private var m_mc:MovieClip;
