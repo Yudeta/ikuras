@@ -62,7 +62,7 @@
 				salmonJump.InitMC(GetMainClass().salmonJumpRoot, new SalmonJumpEffect(), jumpPosList[i], 242);
 				salmonJump.Start();
 				m_salmonJumps.push(salmonJump);
-				salmonJump.Play();
+				//salmonJump.Play();
 			}
 			
 			m_gameover = new Gameover();
@@ -243,6 +243,10 @@
 						m_level = Math.min(10, Math.floor(m_score/3) + 1);
 						m_bg.SetStage(m_level);
 						m_levelNum.SetNum(m_level);
+						
+						for(var i:int=0;i<breakCount;i++){
+							m_salmonJumps[i].Play();
+						}
 					}
 					
 					// 次のピース生成
