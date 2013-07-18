@@ -15,6 +15,7 @@
 		private var m_salmonNum:SalmonNum;
 		private var m_levelNum:LevelNum;
 		private var m_salmonJumps:Array;
+		private var m_lineBreakEffect:Array;
 		private var m_gameover:Gameover;
 		
 		private var m_score:int;
@@ -55,14 +56,24 @@
 			m_levelNum.InitMc(GetMainClass().levelDisp);
 			m_levelNum.Start();
 			
+			var i:int;
+			
 			m_salmonJumps = new Array();
 			var jumpPosList:Array = [360, 240, 120, 0];
-			for(var i:int=0;i<4;i++){
+			for(i=0;i<4;i++){
 				var salmonJump:SalmonJump = new SalmonJump();
 				salmonJump.InitMC(GetMainClass().salmonJumpRoot, new SalmonJumpEffect(), jumpPosList[i], 242);
 				salmonJump.Start();
 				m_salmonJumps.push(salmonJump);
 				//salmonJump.Play();
+			}
+			m_lineBreakEffect = new Array();
+			var lineBreakInstList:Array = [GetMainClass().lineBreakEffect1, GetMainClass().lineBreakEffect2, GetMainClass().lineBreakEffect3, GetMainClass().lineBreakEffect4];
+			for(i=0;i<4;i++){
+				var lineBreakEffect:LineBreakEffect = new LineBreakEffect();
+				lineBreakEffect.InitMC(lineBreakInstList[i]);
+				lineBreakEffect.Start();
+				m_lineBreakEffect.push(lineBreakEffect);
 			}
 			
 			m_gameover = new Gameover();
@@ -94,11 +105,19 @@
 			m_gameover.End();
 			m_gameover = null;
 			
-			for(var i:int=0;i<4;i++){
+			var i:int;
+			
+			for(i=0;i<4;i++){
 				m_salmonJumps[i].End();
 				m_salmonJumps[i] = null;
 			}
 			m_salmonJumps = null;
+			
+			for(i=0;i<4;i++){
+				m_lineBreakEffect[i].End();
+				m_lineBreakEffect[i] = null;
+			}
+			m_lineBreakEffect = null;
 			
 			m_bg.End();
 			m_bg = null;
@@ -255,6 +274,7 @@
 						for(var i:int=0;i<breakCount;i++){
 							m_salmonJumps[i].Play();
 						}
+						m_lineBreakEffect[breakCount - 1].Play();
 					}
 					
 					// 次のピース生成
@@ -633,6 +653,43 @@ class SalmonJump{
 			m_parentMc.removeChild(m_mc);
 			m_mc = null;
 			m_parentMc = null;
+		}
+	}
+	
+	public function Play() : void{
+		m_mc.addEventListener("onMovieComp", onComp);
+		m_mc.gotoAndPlay(1);
+		m_mc.visible = true;
+	}
+	public function Stop() : void{
+		m_mc.stop();
+		m_mc.visible = false;
+	}
+	private function onComp(e:Event):void
+	{
+		m_mc.removeEventListener("onMovieComp", onComp);
+		
+		Stop();
+	}
+}
+
+class LineBreakEffect{
+	private var m_mc:MovieClip = null;
+	private var m_parentMc:MovieClip = null;
+	
+	public function LineBreakEffect(){
+	}
+	
+	public function InitMC(mc:MovieClip) : void{
+		m_mc = mc;
+	}
+	public function Start() : void{
+		Stop();
+	}
+	public function End() : void{
+		if(m_mc != null){
+			Stop();
+			m_mc = null;
 		}
 	}
 	
