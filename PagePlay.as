@@ -13,6 +13,7 @@
 		private var m_bg:Bg;
 		private var m_blockPiece:BlockPiece;
 		private var m_salmonNum:SalmonNum;
+		private var m_levelNum:LevelNum;
 		private var m_salmonJumps:Array;
 		private var m_gameover:Gameover;
 		
@@ -50,6 +51,10 @@
 			m_salmonNum.InitMc(GetMainClass().salmonNumDisp);
 			m_salmonNum.Start();
 			
+			m_levelNum = new LevelNum();
+			m_levelNum.InitMc(GetMainClass().levelDisp);
+			m_levelNum.Start();
+			
 			m_salmonJumps = new Array();
 			var jumpPosList:Array = [360, 240, 120, 0];
 			for(var i:int=0;i<4;i++){
@@ -64,11 +69,12 @@
 			m_gameover.InitMc(GetMainClass().gameoverDisp);
 			m_gameover.Start();
 			
-			m_score = 1;
+			m_score = 0;
 			m_level = 1;
 			m_nextBlockType = UtilityFunc.xRandomInt(0, BlockType.Num - 1);
 			
-			m_bg.SetStage(m_level + 1);
+			m_bg.SetStage(m_level);
+			m_levelNum.SetNum(m_level);
 			m_salmonNum.SetNum(m_score);
 			
 			StartPieceMove();
@@ -96,6 +102,12 @@
 			
 			m_bg.End();
 			m_bg = null;
+			
+			m_salmonNum.End();
+			m_salmonNum = null;
+			
+			m_levelNum.End();
+			m_levelNum = null;
 			
 			m_fieldBitmap.End();
 			m_fieldBitmap = null;
@@ -223,9 +235,15 @@
 					blockPiece.SetPosition(oldPosX, oldPosY);
 					FixPieceOnField(m_tetrisField, m_blockPiece);
 					
-					//trace("fix" + oldPosX + "," + oldPosY);
-					// ★列が揃った判定
-					//DumpField(m_tetrisField);
+					var breakCount:int = BreakLine(m_tetrisField);
+					if(0 < breakCount){
+						m_score += breakCount;
+						m_salmonNum.SetNum(m_score);
+						
+						m_level = Math.min(10, Math.floor(m_score/3) + 1);
+						m_bg.SetStage(m_level);
+						m_levelNum.SetNum(m_level);
+					}
 					
 					// 次のピース生成
 					GenerateNewPiece();
@@ -261,6 +279,48 @@
 			}
 		}
 		
+		//----------------------------
+		// ラインが揃っていたら壊す処理
+		//----------------------------
+		private function CutLine(tetrisField:TetrisField, ypos:int):void
+		{
+			var fieldW:int = tetrisField.GetW();
+			var fieldH:int = tetrisField.GetH();
+			var xi:int;
+			var yi:int;
+			
+			for(yi=ypos;0<yi;yi--){
+				var upperY:int = yi - 1;
+				for(xi=0;xi<fieldW;xi++){
+					tetrisField.SetBlock(xi, yi, tetrisField.GetBlock(xi, upperY));
+				}
+			}
+			for(xi=0;xi<fieldW;xi++){
+				tetrisField.SetBlock(xi, 0, TetrisField.StateNone);
+			}
+		}
+		private function BreakLine(tetrisField:TetrisField):int
+		{
+			var breakCount:int = 0;
+			var fieldW:int = tetrisField.GetW();
+			var fieldH:int = tetrisField.GetH();
+			
+			for(var yi:int=fieldH-1;0<=yi;){
+				var count:int = 0;
+				for(var xi:int=0;xi<fieldW;xi++){
+					if(tetrisField.GetBlock(xi,yi) == 1){
+						count++;
+					}
+				}
+				if(count == fieldW){
+					CutLine(tetrisField, yi);
+					breakCount++;
+				}else{
+					yi--;
+				}
+			}
+			return breakCount;
+		}
 		//----------------------------
 		// ピースをフィールドに定着
 		//----------------------------
@@ -482,17 +542,38 @@ class Bg{
 	public function InitMc(mc:MovieClip) : void{
 		m_mc = mc;
 	}
-	// @param	stageIndex	1..5
 	public function Start():void
 	{
 	}
 	public function End() : void{
 	}
 	
-	// @param	stageIndex	1..5
+	// @param	stageIndex	1..10
 	public function SetStage(stageIndex:int):void
 	{
 		m_mc.gotoAndStop(stageIndex);
+	}
+}
+
+
+class LevelNum{
+	private var m_mc:TextField;
+	
+	public function LevelNum(){
+	}
+	
+	public function InitMc(mc:TextField) : void{
+		m_mc = mc;
+	}
+	public function Start():void
+	{
+	}
+	public function End() : void{
+	}
+	
+	public function SetNum(num:int):void
+	{
+		m_mc.text = String(num);
 	}
 }
 
