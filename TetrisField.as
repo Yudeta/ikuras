@@ -6,7 +6,8 @@
 		private var m_field:Array;
 		
 		static const StateNone:int = 0;
-		static const StateBlock:int = 1;
+		static const StateBlock:int = 1; // 1～7 粒の種類による
+		static const FlagHide:int = 1000;	// 表示だけ消す場合に加算
 		
 		public function TetrisField(){
 		}

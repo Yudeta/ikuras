@@ -185,7 +185,9 @@
 			
 			m_fieldBitmap.Clear();
 			m_fieldBitmap.Update(m_tetrisField);
-			m_fieldBitmap.UpdatePiece(m_blockPiece);
+			if(!IsPauseGameLoop()){
+				m_fieldBitmap.UpdatePiece(m_blockPiece);
+			}
 		}
 		private function PauseGameLoop(b:Boolean):void
 		{
@@ -362,6 +364,9 @@
 		//----------------------------
 		private var m_lineBreakFunction:Function;
 		private var m_lineBreakCount:int;
+		private var m_lineBreakBlinkFlag:Boolean;
+		private var m_lineBreakTimer:GameTimer;
+		static const LineBreakBlinkTime:int = 500; //[ms]
 		
 		private function InitLineBreakEffect():void
 		{
@@ -372,6 +377,10 @@
 			m_lineBreakFunction = UpdateLineBreakEffect0;
 			m_lineBreakCount = lineBreakCount;
 			PauseGameLoop(true);
+			
+			m_lineBreakBlinkFlag = true;
+			m_lineBreakTimer = new GameTimer();
+			m_lineBreakTimer.Start();
 		}
 		private function EndLineBreakEffect():void
 		{
@@ -383,6 +392,7 @@
 			m_levelNum.SetNum(m_level);
 			
 			m_lineBreakFunction = null;
+			m_lineBreakTimer = null;
 			
 			PauseGameLoop(false);
 			NewPiece();
@@ -399,10 +409,14 @@
 				m_salmonJumps[i].Play();
 			}
 			
+			UpdateLineBreakBlink();
+			
 			m_lineBreakFunction = UpdateLineBreakEffect1;
 		}
 		private function UpdateLineBreakEffect1():void
 		{
+			UpdateLineBreakBlink();
+			
 			if(m_salmonJumps[0].IsPlay() == false){
 				m_lineBreakEffect[m_lineBreakCount - 1].Play();
 				m_lineBreakFunction = UpdateLineBreakEffect2;
@@ -410,9 +424,19 @@
 		}
 		private function UpdateLineBreakEffect2():void
 		{
+			UpdateLineBreakBlink();
+			
 			if(m_lineBreakEffect[m_lineBreakCount - 1].IsPlay() == false){
 				BreakLine(m_tetrisField);
 				EndLineBreakEffect();
+			}
+		}
+		private function UpdateLineBreakBlink():void
+		{
+			if(LineBreakBlinkTime <= m_lineBreakTimer.GetElapsedTime()){
+				m_lineBreakBlinkFlag = !m_lineBreakBlinkFlag;
+				BlinkBreakableLine(m_tetrisField, m_lineBreakBlinkFlag);
+				m_lineBreakTimer.Start();
 			}
 		}
 		
@@ -476,6 +500,35 @@
 				}
 			}
 			return breakCount;
+		}
+		private function BlinkBreakableLine(tetrisField:TetrisField, isVisible:Boolean):void
+		{
+			var fieldW:int = tetrisField.GetW();
+			var fieldH:int = tetrisField.GetH();
+			
+			for(var yi:int=0;yi<fieldH;yi++){
+				var count:int = 0;
+				var xi:int;
+				for(xi=0;xi<fieldW;xi++){
+					if(0 < tetrisField.GetBlock(xi,yi)){
+						count++;
+					}
+				}
+				if(count == fieldW){
+					for(xi=0;xi<fieldW;xi++){
+						var type = tetrisField.GetBlock(xi,yi);
+						if(isVisible){
+							if(TetrisField.FlagHide <= type){
+								tetrisField.SetBlock(xi,yi, type - TetrisField.FlagHide);
+							}
+						}else{
+							if(type < TetrisField.FlagHide){
+								tetrisField.SetBlock(xi,yi, type + TetrisField.FlagHide);
+							}
+						}
+					}
+				}
+			}
 		}
 		
 		//----------------------------
@@ -626,177 +679,6 @@ import flash.display.BitmapData;
 import flash.geom.Point;
 import flash.geom.Rectangle;
 
-class FieldBitmap{
-	const ViewSizeW:int = 16 * 10;
-	const ViewSizeH:int = 16 * 20;
-	const BlockW:int = 16;
-	const BlockH:int = 16;
-	private var m_parentMC:MovieClip;
-	private var m_viewBitmapData:BitmapData;
-	private var m_viewBitmap:Bitmap;
-		
-	public function FieldBitmap(){
-	}
-	function Init(parentMC:MovieClip, posX:Number, posY:Number):void{
-		m_parentMC = parentMC;
-		
-		m_viewBitmapData = new BitmapData(ViewSizeW, ViewSizeH, false, 0x000000);  // 不透明赤色のBitmapDataを作る
-		m_viewBitmap = new Bitmap();
-		m_viewBitmap.bitmapData = m_viewBitmapData; // new Bitmap(bitmapData)としてもいい。
-		m_parentMC.addChild(m_viewBitmap);
-		m_viewBitmap.x = posX;
-		m_viewBitmap.y = posY;
-	}
-	function End():void{
-		m_parentMC.removeChild(m_viewBitmap);
-		m_viewBitmapData = null;
-		m_viewBitmap = null;
-	}
-	function Clear():void{
-		var screenRect:Rectangle = new Rectangle(0, 0, ViewSizeW, ViewSizeH);
-		m_viewBitmapData.fillRect(screenRect, 0x000000);
-	}
-	function CreateIkuraBitmap(type:int):BitmapData{
-		var ikuraBitmap:BitmapData = null;
-		switch(type){
-			case 1:
-				ikuraBitmap = new IkuraBlock01(0, 0);
-				break;
-			case 2:
-				ikuraBitmap = new IkuraBlock02(0, 0);
-				break;
-			case 3:
-				ikuraBitmap = new IkuraBlock03(0, 0);
-				break;
-			case 4:
-				ikuraBitmap = new IkuraBlock04(0, 0);
-				break;
-			case 5:
-				ikuraBitmap = new IkuraBlock05(0, 0);
-				break;
-			case 6:
-				ikuraBitmap = new IkuraBlock06(0, 0);
-				break;
-			case 7:
-			default:
-				ikuraBitmap = new IkuraBlock07(0, 0);
-				break;
-		}
-		return ikuraBitmap;
-	}
-	function Update(tetrisField:TetrisField):void{
-		var w:int = tetrisField.GetW();
-		var h:int = tetrisField.GetH();
-		for(var yi:int=0;yi<h;yi++){
-			for(var xi:int=0;xi<w;xi++){
-				var type:int = tetrisField.GetBlock(xi,yi);
-				if(0 < type){
-					var ikuraBitmap:BitmapData = CreateIkuraBitmap(type);//new IkuraBlock01(0, 0);
-					var point:Point = new Point(xi * BlockW, yi * BlockH);
-					var rect:Rectangle = new Rectangle(0, 0, BlockW, BlockH);
-					m_viewBitmapData.copyPixels(ikuraBitmap, rect, point);
-				}
-			}
-		}
-	}
-	function UpdatePiece(blockPiece:BlockPiece):void{
-		var xo = blockPiece.GetPositionX();
-		var yo = blockPiece.GetPositionY();
-		
-		var w:int = blockPiece.GetW();
-		var h:int = blockPiece.GetH();
-		
-		for(var yi:int=0;yi<h;yi++){
-			for(var xi:int=0;xi<w;xi++){
-				var type:int = blockPiece.GetBlock(xi,yi);
-				if(0 < type){
-					var ikuraBitmap:BitmapData = CreateIkuraBitmap(type);
-					var point:Point = new Point((xo+xi) * BlockW, (yo+yi) * BlockH);
-					var rect:Rectangle = new Rectangle(0, 0, BlockW, BlockH);
-					m_viewBitmapData.copyPixels(ikuraBitmap, rect, point);
-				}
-			}
-		}
-	}
-}
-
-class NextPieceBitmap{
-	const ViewSizeW:int = 16 * 4;
-	const ViewSizeH:int = 16 * 4;
-	const BlockW:int = 16;
-	const BlockH:int = 16;
-	private var m_parentMC:MovieClip;
-	private var m_viewBitmapData:BitmapData;
-	private var m_viewBitmap:Bitmap;
-		
-	public function NextPieceBitmap(){
-	}
-	function Init(parentMC:MovieClip, posX:Number, posY:Number):void{
-		m_parentMC = parentMC;
-		
-		m_viewBitmapData = new BitmapData(ViewSizeW, ViewSizeH, true, 0x00000000);  // 不透明赤色のBitmapDataを作る
-		m_viewBitmap = new Bitmap();
-		m_viewBitmap.bitmapData = m_viewBitmapData; // new Bitmap(bitmapData)としてもいい。
-		m_parentMC.addChild(m_viewBitmap);
-		m_viewBitmap.x = posX;
-		m_viewBitmap.y = posY;
-	}
-	function End():void{
-		m_parentMC.removeChild(m_viewBitmap);
-		m_viewBitmapData = null;
-		m_viewBitmap = null;
-	}
-	function Clear():void{
-		var screenRect:Rectangle = new Rectangle(0, 0, ViewSizeW, ViewSizeH);
-		m_viewBitmapData.fillRect(screenRect, 0x00000000);
-	}
-	function CreateIkuraBitmap(type:int):BitmapData{
-		var ikuraBitmap:BitmapData = null;
-		switch(type){
-			case 1:
-				ikuraBitmap = new IkuraBlock01(0, 0);
-				break;
-			case 2:
-				ikuraBitmap = new IkuraBlock02(0, 0);
-				break;
-			case 3:
-				ikuraBitmap = new IkuraBlock03(0, 0);
-				break;
-			case 4:
-				ikuraBitmap = new IkuraBlock04(0, 0);
-				break;
-			case 5:
-				ikuraBitmap = new IkuraBlock05(0, 0);
-				break;
-			case 6:
-				ikuraBitmap = new IkuraBlock06(0, 0);
-				break;
-			case 7:
-			default:
-				ikuraBitmap = new IkuraBlock07(0, 0);
-				break;
-		}
-		return ikuraBitmap;
-	}
-	function UpdatePiece(blockPiece:BlockPiece):void{
-		Clear();
-		
-		var w:int = blockPiece.GetW();
-		var h:int = blockPiece.GetH();
-		
-		for(var yi:int=0;yi<h;yi++){
-			for(var xi:int=0;xi<w;xi++){
-				var type:int = blockPiece.GetBlock(xi,yi);
-				if(0 < type){
-					var ikuraBitmap:BitmapData = CreateIkuraBitmap(type);
-					var point:Point = new Point(xi * BlockW, yi * BlockH);
-					var rect:Rectangle = new Rectangle(0, 0, BlockW, BlockH);
-					m_viewBitmapData.copyPixels(ikuraBitmap, rect, point);
-				}
-			}
-		}
-	}
-}
 
 class Bg{
 	private var m_mc:MovieClip;
