@@ -2,6 +2,7 @@
 
 	import flash.display.MovieClip;
 	import flash.events.MouseEvent;
+	import flash.events.KeyboardEvent;
 	
 	
 	public class PageTitle extends PageBase {
@@ -18,14 +19,19 @@
 			GetMainClass().titlePlayButton.play();
 			
 			GetStage().addEventListener(MouseEvent.CLICK, OnClickTitleStartButton);
+			GetStage().addEventListener(KeyboardEvent.KEY_DOWN, OnKeyDown);
 		}
 		public override function End():void
 		{
 			GetStage().removeEventListener(MouseEvent.CLICK, OnClickTitleStartButton);
+			GetStage().removeEventListener(KeyboardEvent.KEY_DOWN, OnKeyDown);
 		}
 		
 		//----------------------------
 		private function OnClickTitleStartButton(e:MouseEvent):void{
+			SetNextPage(new PagePlay());
+		}
+		private function OnKeyDown(event:KeyboardEvent):void{
 			SetNextPage(new PagePlay());
 		}
 	}

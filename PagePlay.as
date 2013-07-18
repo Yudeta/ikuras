@@ -17,7 +17,7 @@
 		private var m_gameover:Gameover;
 		
 		private var m_score:int;
-		private var m_level:int;
+		private var m_level:int; // 1～
 		private var m_nextBlockType:int;
 		
 		public function PagePlay() {
@@ -65,7 +65,7 @@
 			m_gameover.Start();
 			
 			m_score = 1;
-			m_level = 0;
+			m_level = 1;
 			m_nextBlockType = UtilityFunc.xRandomInt(0, BlockType.Num - 1);
 			
 			m_bg.SetStage(m_level + 1);
@@ -184,7 +184,10 @@
 		//----------------------------
 		// ピース移動
 		//----------------------------
-		static const PieceMoveAutoDownTime:int = 100; // 自動でピースが一段落ちる時間[ms]
+		static const PieceMoveFastDownTime:int = 40; // 早く落とす入力時の落ちる時間[ms]
+		static const PieceMoveAutoDownTime_0:int = 500; // 自動でピースが一段落ちる時間[ms]
+		static const PieceMoveAutoDownTime_1:int = 300; // 自動でピースが一段落ちる時間[ms]
+		static const PieceMoveAutoDownTime_2:int = 100; // 自動でピースが一段落ちる時間[ms]
 		private var m_pieceMoveTimer:GameTimer;
 		
 		private function StartPieceMove():void{
@@ -196,7 +199,20 @@
 		}
 		private function UpdatePieceMove(blockPiece:BlockPiece):void{
 			// 時間で落下
-			if(PieceMoveAutoDownTime <= m_pieceMoveTimer.GetElapsedTime()){
+			var downTime:int;
+			
+			if(IsDownKeyDown()){
+				downTime = PieceMoveFastDownTime;
+			}else{
+				if(m_level <= 5){
+					downTime = PieceMoveAutoDownTime_0;
+				}else if(m_level < 10){
+					downTime = PieceMoveAutoDownTime_1;
+				}else{
+					downTime = PieceMoveAutoDownTime_2;
+				}
+			}
+			if(downTime <= m_pieceMoveTimer.GetElapsedTime()){
 				m_pieceMoveTimer.Start();
 				
 				var oldPosX:int = blockPiece.GetPositionX();
@@ -330,21 +346,16 @@
 			m_isDownKeyUp = false;
 			m_isDownKeyLeft = false;
 			m_isDownKeyUp = false;
-//			GetStage().addEventListener(MouseEvent.CLICK, OnClick);
 			GetStage().addEventListener(KeyboardEvent.KEY_DOWN, OnKeyDown);
 			GetStage().addEventListener(KeyboardEvent.KEY_UP, OnKeyUp);
 		}
 		private function EndInput():void
 		{
-//			GetStage().removeEventListener(MouseEvent.CLICK, OnClick);
 			GetStage().removeEventListener(KeyboardEvent.KEY_DOWN, OnKeyDown);
 			GetStage().removeEventListener(KeyboardEvent.KEY_UP, OnKeyUp);
 		}
-/*		private function OnClick(e:MouseEvent):void{
-			SetNextPage(new PageEnding());
-		}*/
 		
-		private function OnKeyDown(event:KeyboardEvent){
+		private function OnKeyDown(event:KeyboardEvent):void{
 			if(event.keyCode == KeyCode.Left){
 				if(m_isDownKeyLeft == false){
 					m_isDownKeyLeft = true;
@@ -380,6 +391,9 @@
 			}else if(event.keyCode == KeyCode.Right){
 				m_isDownKeyRight = false;
 			}
+		}
+		private function IsDownKeyDown():Boolean{
+			return m_isDownKeyDown;
 		}
 	}
 }
