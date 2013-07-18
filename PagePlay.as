@@ -269,7 +269,7 @@
 		static const PieceMoveAutoDownTime_1:int = 400; // 自動でピースが一段落ちる時間[ms]
 		static const PieceMoveAutoDownTime_2:int = 300; // 自動でピースが一段落ちる時間[ms]
 		static const PieceMoveAutoDownTime_3:int = 200; // 自動でピースが一段落ちる時間[ms]
-		static const PieceMoveAutoDownTime_4:int = 100; // 自動でピースが一段落ちる時間[ms]
+		static const PieceMoveAutoDownTime_4:int = 180; // 自動でピースが一段落ちる時間[ms]
 		private var m_pieceMoveTimer:GameTimer;
 		
 		private function StartPieceMove():void{
