@@ -79,6 +79,8 @@
 		}
 		public override function End():void
 		{
+			EndGameover();
+			
 			EndPieceMove();
 			EndGameLoop();
 			EndInput();
@@ -132,6 +134,40 @@
 		}
 		
 		//----------------------------
+		// ゲームオーバー処理
+		//----------------------------
+		static const GameoverAnimTime:int = 4 * 1000;
+		
+		private var m_gameoverTimer:GameTimer;
+		
+		private function StartGameover():void
+		{
+			EndGameLoop();
+			
+			m_gameover.Play();
+			
+			m_gameoverTimer = new GameTimer();
+			m_gameoverTimer.Start();
+			
+			addEventListener(Event.ENTER_FRAME, OnEnterFrameGameover);
+			
+		}
+		private function EndGameover():void
+		{
+			removeEventListener(Event.ENTER_FRAME, OnEnterFrameGameover);
+			
+			m_gameoverTimer = null;
+		}
+		private function OnEnterFrameGameover(event:Event):void
+		{
+			if(GameoverAnimTime <= m_gameoverTimer.GetElapsedTime()){
+				EndGameover();
+				
+				SetNextPage(new PageEnding());
+			}
+		}
+		
+		//----------------------------
 		// ピース生成
 		//----------------------------
 		private function GenerateNewPiece():void
@@ -140,7 +176,7 @@
 
 			m_blockPiece.SetPieceType(blockType);
 			m_blockPiece.SetRotType(BlockPiece.RotType_0);
-			m_blockPiece.SetPosition(2, 2);
+			m_blockPiece.SetPosition(3, 0);
 
 			m_nextBlockType = UtilityFunc.xRandomInt(0, BlockType.Num - 1);
 		}
@@ -177,6 +213,11 @@
 					
 					// 次のピース生成
 					GenerateNewPiece();
+					
+					//生成していきなりヒットしていたらゲームオーバー
+					if(CheckHit(m_tetrisField, m_blockPiece)){
+						StartGameover();
+					}
 				}
 			}
 		}
@@ -514,18 +555,25 @@ class Gameover{
 		m_mc = mc;
 	}
 	public function Start() : void{
-		m_mc.visible = false;
+		Stop();
 	}
 	public function End() : void{
 	}
 	
-	public function SetActive(b:Boolean) : void{
-		if(b){
-			m_mc.visible = true;
-			m_mc.gotoAndPlay(1);
-		}else{
-			m_mc.visible = false;
-		}
+	public function Play() : void{
+		m_mc.addEventListener("onMovieComp", onComp);
+		m_mc.gotoAndPlay(1);
+		m_mc.visible = true;
+	}
+	public function Stop() : void{
+		m_mc.stop();
+		m_mc.visible = false;
+	}
+	private function onComp(e:Event):void
+	{
+		m_mc.removeEventListener("onMovieComp", onComp);
+		
+		Stop();
 	}
 }
 
