@@ -298,7 +298,7 @@
 						blockPiece.SetPosition(oldPosX, oldPosY);
 						FixPieceOnField(m_tetrisField, m_blockPiece);
 						
-						var breakCount:int = BreakLine(m_tetrisField);
+						var breakCount:int = CountBreakableLine(m_tetrisField);
 						if(0 < breakCount){
 							StartLineBreakEffect(breakCount);
 						/*	m_score += breakCount;
@@ -411,6 +411,7 @@
 		private function UpdateLineBreakEffect2():void
 		{
 			if(m_lineBreakEffect[m_lineBreakCount - 1].IsPlay() == false){
+				BreakLine(m_tetrisField);
 				EndLineBreakEffect();
 			}
 		}
@@ -457,6 +458,26 @@
 			}
 			return breakCount;
 		}
+		private function CountBreakableLine(tetrisField:TetrisField):int
+		{
+			var breakCount:int = 0;
+			var fieldW:int = tetrisField.GetW();
+			var fieldH:int = tetrisField.GetH();
+			
+			for(var yi:int=0;yi<fieldH;yi++){
+				var count:int = 0;
+				for(var xi:int=0;xi<fieldW;xi++){
+					if(tetrisField.GetBlock(xi,yi) == 1){
+						count++;
+					}
+				}
+				if(count == fieldW){
+					breakCount++;
+				}
+			}
+			return breakCount;
+		}
+		
 		//----------------------------
 		// ピースをフィールドに定着
 		//----------------------------
