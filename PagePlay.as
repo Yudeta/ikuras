@@ -175,7 +175,15 @@
 			if(GameoverAnimTime <= m_gameoverTimer.GetElapsedTime()){
 				EndGameover();
 				
-				SetNextPage(new PageEnding());
+				var page:PageEnding = new PageEnding();
+				if(m_level <= 5){
+					page.SetResultMode(PageEnding.ResultMode0);
+				}else if(m_level < 10){
+					page.SetResultMode(PageEnding.ResultMode1);
+				}else{
+					page.SetResultMode(PageEnding.ResultMode2);
+				}
+				SetNextPage(page);
 			}
 		}
 		
