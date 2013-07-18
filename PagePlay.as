@@ -10,8 +10,10 @@
 	public class PagePlay extends PageBase {
 		private var m_tetrisField:TetrisField;
 		private var m_fieldBitmap:FieldBitmap;
+		private var m_nextPieceBitmap:NextPieceBitmap
 		private var m_bg:Bg;
 		private var m_blockPiece:BlockPiece;
+		private var m_nextBlockPiece:BlockPiece;
 		private var m_salmonNum:SalmonNum;
 		private var m_levelNum:LevelNum;
 		private var m_salmonJumps:Array;
@@ -39,6 +41,9 @@
 			m_fieldBitmap = new FieldBitmap();
 			m_fieldBitmap.Init(GetMainClass().blockFieldRoot, 160, 18);
 			
+			m_nextPieceBitmap = new NextPieceBitmap();
+			m_nextPieceBitmap.Init(GetMainClass().blockFieldRoot, 380, 50);
+			
 			m_bg = new Bg();
 			m_bg.InitMc(GetMainClass().playBg);
 			m_bg.Start();
@@ -47,6 +52,11 @@
 			m_blockPiece.SetPieceType(BlockPiece.PieceType_I);
 			m_blockPiece.SetRotType(BlockPiece.RotType_0);
 			m_blockPiece.SetPosition(0, 0);
+			
+			m_nextBlockPiece = new BlockPiece();
+			m_nextBlockPiece.SetPieceType(BlockPiece.PieceType_I);
+			m_nextBlockPiece.SetRotType(BlockPiece.RotType_0);
+			m_nextBlockPiece.SetPosition(0, 0);
 			
 			m_salmonNum = new SalmonNum();
 			m_salmonNum.InitMc(GetMainClass().salmonNumDisp);
@@ -83,6 +93,8 @@
 			m_score = 0;
 			m_level = 1;
 			m_nextBlockType = UtilityFunc.xRandomInt(0, BlockType.Num - 1);
+			m_nextBlockPiece.SetPieceType(m_nextBlockType);
+			m_nextPieceBitmap.UpdatePiece(m_nextBlockPiece);
 			
 			m_bg.SetStage(m_level);
 			m_levelNum.SetNum(m_level);
@@ -131,8 +143,14 @@
 			m_fieldBitmap.End();
 			m_fieldBitmap = null;
 			
+			m_nextPieceBitmap.End();
+			m_nextPieceBitmap = null;
+			
 			m_blockPiece.End();
 			m_blockPiece = null;
+			
+			m_nextBlockPiece.End();
+			m_nextBlockPiece = null;
 			
 			m_tetrisField.End();
 			m_tetrisField = null;
@@ -218,6 +236,8 @@
 			m_blockPiece.SetPosition(3, 0);
 
 			m_nextBlockType = UtilityFunc.xRandomInt(0, BlockType.Num - 1);
+			m_nextBlockPiece.SetPieceType(m_nextBlockType);
+			m_nextPieceBitmap.UpdatePiece(m_nextBlockPiece);
 		}
 
 		//----------------------------
@@ -564,6 +584,54 @@ class FieldBitmap{
 	}
 }
 
+class NextPieceBitmap{
+	const ViewSizeW:int = 16 * 4;
+	const ViewSizeH:int = 16 * 4;
+	const BlockW:int = 16;
+	const BlockH:int = 16;
+	private var m_parentMC:MovieClip;
+	private var m_viewBitmapData:BitmapData;
+	private var m_viewBitmap:Bitmap;
+		
+	public function NextPieceBitmap(){
+	}
+	function Init(parentMC:MovieClip, posX:Number, posY:Number):void{
+		m_parentMC = parentMC;
+		
+		m_viewBitmapData = new BitmapData(ViewSizeW, ViewSizeH, true, 0x000000);  // 不透明赤色のBitmapDataを作る
+		m_viewBitmap = new Bitmap();
+		m_viewBitmap.bitmapData = m_viewBitmapData; // new Bitmap(bitmapData)としてもいい。
+		m_parentMC.addChild(m_viewBitmap);
+		m_viewBitmap.x = posX;
+		m_viewBitmap.y = posY;
+	}
+	function End():void{
+		m_parentMC.removeChild(m_viewBitmap);
+		m_viewBitmapData = null;
+		m_viewBitmap = null;
+	}
+	function Clear():void{
+		var screenRect:Rectangle = new Rectangle(0, 0, ViewSizeW, ViewSizeH);
+		m_viewBitmapData.fillRect(screenRect, 0x00000000);
+	}
+	function UpdatePiece(blockPiece:BlockPiece):void{
+		Clear();
+		
+		var w:int = blockPiece.GetW();
+		var h:int = blockPiece.GetH();
+		
+		for(var yi:int=0;yi<h;yi++){
+			for(var xi:int=0;xi<w;xi++){
+				if(blockPiece.GetBlock(xi, yi) == 1){
+					var ikuraBitmap:BitmapData = new IkuraBlock01(0, 0);
+					var point:Point = new Point(xi * BlockW, yi * BlockH);
+					var rect:Rectangle = new Rectangle(0, 0, BlockW, BlockH);
+					m_viewBitmapData.copyPixels(ikuraBitmap, rect, point);
+				}
+			}
+		}
+	}
+}
 
 class Bg{
 	private var m_mc:MovieClip;
