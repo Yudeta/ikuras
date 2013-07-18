@@ -398,7 +398,7 @@
 			m_score += m_lineBreakCount;
 			m_salmonNum.SetNum(m_score);
 			
-			m_level = Math.min(10, Math.floor(m_score/3) + 1);
+			m_level = Math.floor(m_score/3) + 1;
 			m_bg.SetStage(m_level);
 			m_levelNum.SetNum(m_level);
 			
@@ -711,6 +711,7 @@ class Bg{
 	// @param	stageIndex	1..10
 	public function SetStage(stageIndex:int):void
 	{
+		stageIndex = Math.min(10, stageIndex);
 		m_mc.gotoAndStop(stageIndex);
 	}
 }
