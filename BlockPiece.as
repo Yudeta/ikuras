@@ -23,43 +23,43 @@
 		static const PieceDataI:Array = [
 						 0, 0, 0, 0,
 						 0, 0, 0, 0,
-						 1, 1, 1, 1,
+						 1, 2, 3, 4,
 						 0, 0, 0, 0
 					];
 		static const PieceDataO:Array = [
 						 0, 0, 0, 0,
-						 0, 1, 1, 0,
-						 0, 1, 1, 0,
+						 0, 5, 6, 0,
+						 0, 7, 1, 0,
 						 0, 0, 0, 0
 					];
 		static const PieceDataS:Array = [
 						 0, 0, 0, 0,
-						 0, 1, 1, 0,
-						 1, 1, 0, 0,
+						 0, 2, 3, 0,
+						 4, 5, 0, 0,
 						 0, 0, 0, 0
 					];
 		static const PieceDataZ:Array = [
 						 0, 0, 0, 0,
-						 0, 1, 1, 0,
-						 0, 0, 1, 1,
+						 0, 6, 7, 0,
+						 0, 0, 1, 2,
 						 0, 0, 0, 0
 					];
 		static const PieceDataJ:Array = [
 						 0, 0, 0, 0,
-						 0, 1, 0, 0,
-						 0, 1, 1, 1,
+						 0, 3, 0, 0,
+						 0, 4, 5, 6,
 						 0, 0, 0, 0
 					];
 		static const PieceDataL:Array = [
 						 0, 0, 0, 0,
-						 0, 0, 1, 0,
-						 1, 1, 1, 0,
+						 0, 0, 7, 0,
+						 1, 2, 3, 0,
 						 0, 0, 0, 0
 					];
 		static const PieceDataT:Array = [
 						 0, 0, 0, 0,
-						 0, 1, 0, 0,
-						 1, 1, 1, 0,
+						 0, 4, 0, 0,
+						 5, 6, 7, 0,
 						 0, 0, 0, 0
 					];
 		

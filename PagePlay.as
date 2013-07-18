@@ -445,7 +445,7 @@
 			for(var yi:int=fieldH-1;0<=yi;){
 				var count:int = 0;
 				for(var xi:int=0;xi<fieldW;xi++){
-					if(tetrisField.GetBlock(xi,yi) == 1){
+					if(0 < tetrisField.GetBlock(xi,yi)){
 						count++;
 					}
 				}
@@ -467,7 +467,7 @@
 			for(var yi:int=0;yi<fieldH;yi++){
 				var count:int = 0;
 				for(var xi:int=0;xi<fieldW;xi++){
-					if(tetrisField.GetBlock(xi,yi) == 1){
+					if(0 < tetrisField.GetBlock(xi,yi)){
 						count++;
 					}
 				}
@@ -500,8 +500,9 @@
 						continue;
 					}
 					
-					if(blockPiece.GetBlock(xi,yi) == 1){
-						tetrisField.SetBlock(xpos, ypos, TetrisField.StateBlock);
+					var type:int = blockPiece.GetBlock(xi,yi);
+					if(0 < type){
+						tetrisField.SetBlock(xpos, ypos, type);
 					}
 				}
 			}
@@ -537,11 +538,11 @@
 				var ypos:int = pieceY0 + yi;
 				for(var xi:int=0;xi<=pieceX1-pieceX0;xi++){
 					var xpos:int = pieceX0 + xi;
-					if(blockPiece.GetBlock(xi, yi) == 1){
+					if(0 < blockPiece.GetBlock(xi, yi)){
 						if(ypos < 0 || fieldH <= ypos || xpos < 0 || fieldW <= xpos){
 							return true;
 						}
-						if(tetrisField.GetBlock(xpos, ypos) == 1){
+						if(0 < tetrisField.GetBlock(xpos, ypos)){
 							return true;
 						}
 					}
@@ -655,13 +656,42 @@ class FieldBitmap{
 		var screenRect:Rectangle = new Rectangle(0, 0, ViewSizeW, ViewSizeH);
 		m_viewBitmapData.fillRect(screenRect, 0x000000);
 	}
+	function CreateIkuraBitmap(type:int):BitmapData{
+		var ikuraBitmap:BitmapData = null;
+		switch(type){
+			case 1:
+				ikuraBitmap = new IkuraBlock01(0, 0);
+				break;
+			case 2:
+				ikuraBitmap = new IkuraBlock02(0, 0);
+				break;
+			case 3:
+				ikuraBitmap = new IkuraBlock03(0, 0);
+				break;
+			case 4:
+				ikuraBitmap = new IkuraBlock04(0, 0);
+				break;
+			case 5:
+				ikuraBitmap = new IkuraBlock05(0, 0);
+				break;
+			case 6:
+				ikuraBitmap = new IkuraBlock06(0, 0);
+				break;
+			case 7:
+			default:
+				ikuraBitmap = new IkuraBlock07(0, 0);
+				break;
+		}
+		return ikuraBitmap;
+	}
 	function Update(tetrisField:TetrisField):void{
 		var w:int = tetrisField.GetW();
 		var h:int = tetrisField.GetH();
 		for(var yi:int=0;yi<h;yi++){
 			for(var xi:int=0;xi<w;xi++){
-				if(tetrisField.GetBlock(xi,yi) == 1){
-					var ikuraBitmap:BitmapData = new IkuraBlock01(0, 0);
+				var type:int = tetrisField.GetBlock(xi,yi);
+				if(0 < type){
+					var ikuraBitmap:BitmapData = CreateIkuraBitmap(type);//new IkuraBlock01(0, 0);
 					var point:Point = new Point(xi * BlockW, yi * BlockH);
 					var rect:Rectangle = new Rectangle(0, 0, BlockW, BlockH);
 					m_viewBitmapData.copyPixels(ikuraBitmap, rect, point);
@@ -678,8 +708,9 @@ class FieldBitmap{
 		
 		for(var yi:int=0;yi<h;yi++){
 			for(var xi:int=0;xi<w;xi++){
-				if(blockPiece.GetBlock(xi, yi) == 1){
-					var ikuraBitmap:BitmapData = new IkuraBlock01(0, 0);
+				var type:int = blockPiece.GetBlock(xi,yi);
+				if(0 < type){
+					var ikuraBitmap:BitmapData = CreateIkuraBitmap(type);
 					var point:Point = new Point((xo+xi) * BlockW, (yo+yi) * BlockH);
 					var rect:Rectangle = new Rectangle(0, 0, BlockW, BlockH);
 					m_viewBitmapData.copyPixels(ikuraBitmap, rect, point);
@@ -719,6 +750,34 @@ class NextPieceBitmap{
 		var screenRect:Rectangle = new Rectangle(0, 0, ViewSizeW, ViewSizeH);
 		m_viewBitmapData.fillRect(screenRect, 0x00000000);
 	}
+	function CreateIkuraBitmap(type:int):BitmapData{
+		var ikuraBitmap:BitmapData = null;
+		switch(type){
+			case 1:
+				ikuraBitmap = new IkuraBlock01(0, 0);
+				break;
+			case 2:
+				ikuraBitmap = new IkuraBlock02(0, 0);
+				break;
+			case 3:
+				ikuraBitmap = new IkuraBlock03(0, 0);
+				break;
+			case 4:
+				ikuraBitmap = new IkuraBlock04(0, 0);
+				break;
+			case 5:
+				ikuraBitmap = new IkuraBlock05(0, 0);
+				break;
+			case 6:
+				ikuraBitmap = new IkuraBlock06(0, 0);
+				break;
+			case 7:
+			default:
+				ikuraBitmap = new IkuraBlock07(0, 0);
+				break;
+		}
+		return ikuraBitmap;
+	}
 	function UpdatePiece(blockPiece:BlockPiece):void{
 		Clear();
 		
@@ -727,8 +786,9 @@ class NextPieceBitmap{
 		
 		for(var yi:int=0;yi<h;yi++){
 			for(var xi:int=0;xi<w;xi++){
-				if(blockPiece.GetBlock(xi, yi) == 1){
-					var ikuraBitmap:BitmapData = new IkuraBlock01(0, 0);
+				var type:int = blockPiece.GetBlock(xi,yi);
+				if(0 < type){
+					var ikuraBitmap:BitmapData = CreateIkuraBitmap(type);
 					var point:Point = new Point(xi * BlockW, yi * BlockH);
 					var rect:Rectangle = new Rectangle(0, 0, BlockW, BlockH);
 					m_viewBitmapData.copyPixels(ikuraBitmap, rect, point);
